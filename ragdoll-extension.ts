@@ -96,55 +96,78 @@ namespace ragdoll {
 
         update() {
             const dt = 1 / 60
+            const iterations = 4
             let forces: { x: number, y: number }[] = []
-
             for (let i = 0; i < this.points.length; i++) {
                 forces.push({ x: 0, y: 0 })
+
                 let externalDx = this.points[i].x - this.simX[i]
                 let externalDy = this.points[i].y - this.simY[i]
+
                 if (Math.abs(externalDx) > 0.75 || Math.abs(externalDy) > 0.75) {
                     this.simX[i] = this.points[i].x
                     this.simY[i] = this.points[i].y
+
                     if (this.isFixed[i]) {
                         this.oldX[i] = this.simX[i]
                         this.oldY[i] = this.simY[i]
                     }
                 }
             }
-
-            this.applyConnections(forces)
-            applyAngleClamps(this)
-            applyAngleClamps(this)
-
+            for (let iteration = 0; iteration < iterations; iteration++) {
+                for (let i = 0; i < forces.length; i++) {
+                    forces[i].x = 0
+                    forces[i].y = 0
+                }
+                this.applyConnections(forces)
+                for (let i = 0; i < this.points.length; i++) {
+                    if (!this.isFixed[i]) {
+                        this.simX[i] += forces[i].x * 0.25
+                        this.simY[i] += forces[i].y * 0.25
+                    }
+                }
+            }
             for (let i = 0; i < this.points.length; i++) {
                 if (!this.isFixed[i]) {
+
                     if (this.hasGravity && this.gravityStrength !== 0) {
-                        forces[i].y += this.gravityStrength * dt
+                        this.simY[i] += this.gravityStrength * dt * dt
                     }
+
                     let tempX = this.simX[i]
                     let tempY = this.simY[i]
+
                     let velX = (this.simX[i] - this.oldX[i]) * this.damping
                     let velY = (this.simY[i] - this.oldY[i]) * this.damping
-                    let newX = this.simX[i] + velX + forces[i].x
-                    let newY = this.simY[i] + velY + forces[i].y
+
+                    let newX = this.simX[i] + velX
+                    let newY = this.simY[i] + velY
+
                     if (this.maxSegmentVelocity > 0) {
                         let dx = newX - this.oldX[i]
                         let dy = newY - this.oldY[i]
+
                         let speed = Math.sqrt(dx * dx + dy * dy)
+
                         if (speed > this.maxSegmentVelocity) {
                             let scale = this.maxSegmentVelocity / speed
+
                             newX = this.oldX[i] + dx * scale
                             newY = this.oldY[i] + dy * scale
                         }
                     }
+
                     this.simX[i] = newX
                     this.simY[i] = newY
+
                     this.oldX[i] = tempX
                     this.oldY[i] = tempY
+
                 } else {
                     this.oldX[i] = this.simX[i]
                     this.oldY[i] = this.simY[i]
                 }
+
                 this.points[i].x = this.simX[i]
                 this.points[i].y = this.simY[i]
             }
