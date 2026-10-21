@@ -481,17 +481,20 @@ namespace ragdoll {
         fillTriangle(target, axL, ayL, bxL, byL, bxR, byR, color)
         fillTriangle(target, axL, ayL, bxR, byR, axR, ayR, color)
     }
-    //% block="connect $spriteA to $spriteB distance $restLength on ragdoll $ragdollId"
+    //% block="connect $spriteA to $spriteB distance $restLength on ragdoll $ragdollId max stretch factor $maxStretchFactor"
     //% spriteA.shadow=variables_get spriteB.shadow=variables_get ragdollId.shadow=text
-    //% restLength.defl=0
+    //% restLength.defl=0 maxStretchFactor.defl=0 maxStretchFactor.min=0 maxStretchFactor.max=2
     //% group="Creation"
-    export function connectSprites(spriteA: Sprite, spriteB: Sprite, restLength: number, ragdollId: string) {
+    export function connectSprites(spriteA: Sprite, spriteB: Sprite, restLength: number, ragdollId: string, maxStretchFactor?: number) {
         let rag = getOrCreateRagdoll(ragdollId)
         rag.addSegment(spriteA)
         rag.addSegment(spriteB)
         let aIndex = rag.getIndex(spriteA)
         let bIndex = rag.getIndex(spriteB)
-        rag.addConnection(aIndex, bIndex, restLength)
+        let factor = maxStretchFactor
+        if (factor === 0) factor = undefined
+        else if (factor !== undefined) factor = Math.max(1, factor)
+        rag.addConnection(aIndex, bIndex, restLength, undefined, factor)
     }
 
     //% block="disconnect $spriteA from $spriteB in ragdoll $ragdollId"
@@ -517,6 +520,30 @@ namespace ragdoll {
         rag.connections = rag.connections.filter(c => c.a !== idx && c.b !== idx)
     }
 
+    //% block="destroy all connections in ragdoll $ragdollId"
+    //% ragdollId.shadow=text
+    //% group="Modify"
+    export function destroyAllConnections(ragdollId: string) {
+        let rag = activeRagdolls[ragdollId || "__default"]
+        if (!rag) return
+        rag.connections = []
+    }
+
+    //% block="delete ragdoll $ragdollId"
+    //% ragdollId.shadow=text
+    //% group="Modify"
+    export function deleteRagdoll(ragdollId: string) {
+        let key = ragdollId || "__default"
+        let rag = activeRagdolls[key]
+        if (!rag) return
+        for (let i = 0; i < rag.points.length; i++) {
+            rag.points[i].destroy()
+        }
+        delete activeRagdolls[key]
+        let index = ragdollIds.indexOf(key)
+        if (index >= 0) ragdollIds.removeAt(index)
+    }
+
     //% block="set ragdoll $ragdollId damping to $value"
     //% ragdollId.shadow=text
     //% value.defl=0.85 value.min=0 value.max=1
@@ -533,6 +560,19 @@ namespace ragdoll {
     export function setSpringStiffness(ragdollId: string, value: number) {
         let rag = getOrCreateRagdoll(ragdollId)
         rag.springStiffness = value
+    }
+
+    //% block="set ragdoll $ragdollId max stretch factor to $factor"
+    //% ragdollId.shadow=text
+    //% factor.defl=1.1 factor.min=1 factor.max=2
+    //% group="Modify"
+    export function setMaxStretch(ragdollId: string, factor: number) {
+        let rag = getOrCreateRagdoll(ragdollId)
+        let maxStretchFactor = Math.max(1, factor)
+        rag.defaultMaxStretchFactor = maxStretchFactor
+        for (let i = 0; i < rag.connections.length; i++) {
+            rag.connections[i].maxStretchFactor = maxStretchFactor
+        }
     }
 
     //% block="set ragdoll $ragdollId max velocity to $value"
@@ -603,6 +643,16 @@ namespace ragdoll {
             result.push(ragdollIds[i])
         }
         return result
+    }
+
+    //% block="all sprites in ragdoll $ragdollId"
+    //% blockSetVariable=sprites
+    //% ragdollId.shadow=text
+    //% group="Query"
+    export function getRagdollSprites(ragdollId: string): Sprite[] {
+        let rag = activeRagdolls[ragdollId || "__default"]
+        if (!rag) return []
+        return rag.points.slice()
     }
 
     //% block="$spriteA connected to $spriteB in ragdoll $ragdollId"
@@ -745,6 +795,3 @@ namespace ragdoll {
         conn.clampTarget = targetEnd
     }
 }
-
-
-
