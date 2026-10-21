@@ -529,10 +529,10 @@ namespace ragdoll {
         rag.connections = []
     }
 
-    //% block="delete ragdoll $ragdollId"
+    //% block="destroy ragdoll $ragdollId"
     //% ragdollId.shadow=text
     //% group="Modify"
-    export function deleteRagdoll(ragdollId: string) {
+    export function destroyRagdoll(ragdollId: string) {
         let key = ragdollId || "__default"
         let rag = activeRagdolls[key]
         if (!rag) return
