@@ -481,20 +481,17 @@ namespace ragdoll {
         fillTriangle(target, axL, ayL, bxL, byL, bxR, byR, color)
         fillTriangle(target, axL, ayL, bxR, byR, axR, ayR, color)
     }
-    //% block="connect $spriteA to $spriteB distance $restLength on ragdoll $ragdollId max stretch factor $maxStretchFactor"
+    //% block="connect $spriteA to $spriteB distance $restLength on ragdoll $ragdollId"
     //% spriteA.shadow=variables_get spriteB.shadow=variables_get ragdollId.shadow=text
-    //% restLength.defl=0 maxStretchFactor.defl=0 maxStretchFactor.min=0 maxStretchFactor.max=2
+    //% restLength.defl=0
     //% group="Creation"
-    export function connectSprites(spriteA: Sprite, spriteB: Sprite, restLength: number, ragdollId: string, maxStretchFactor?: number) {
+    export function connectSprites(spriteA: Sprite, spriteB: Sprite, restLength: number, ragdollId: string) {
         let rag = getOrCreateRagdoll(ragdollId)
         rag.addSegment(spriteA)
         rag.addSegment(spriteB)
         let aIndex = rag.getIndex(spriteA)
         let bIndex = rag.getIndex(spriteB)
-        let factor = maxStretchFactor
-        if (factor === 0) factor = undefined
-        else if (factor !== undefined) factor = Math.max(1, factor)
-        rag.addConnection(aIndex, bIndex, restLength, undefined, factor)
+        rag.addConnection(aIndex, bIndex, restLength)
     }
 
     //% block="disconnect $spriteA from $spriteB in ragdoll $ragdollId"
